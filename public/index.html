@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChitChat - Premium Social Club</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-gray-950 text-white font-sans antialiased flex justify-center items-center h-screen overflow-hidden">
+
+    <div id="loginScreen" class="fixed inset-0 bg-gray-950 z-50 flex flex-col justify-between p-6 max-w-md mx-auto">
+        <div class="text-center mt-16">
+            <h1 class="text-3xl font-extrabold text-pink-500">ChitChat</h1>
+        </div>
+        <div class="space-y-4 w-full">
+            <input type="text" id="usernameInput" placeholder="Apna naam likhein..." class="w-full py-3.5 px-4 bg-gray-900 border border-gray-700 rounded-2xl text-sm text-white">
+            <button onclick="loginUser()" class="w-full py-3.5 bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl font-bold">App me enter karein 🚀</button>
+        </div>
+    </div>
+
+    <div id="mainApp" class="hidden flex flex-col h-full w-full max-w-md bg-gray-900 shadow-2xl relative">
+        <div id="topHeader" class="flex items-center justify-between p-4 bg-gray-900 border-b border-gray-800">
+            <div class="flex gap-4 text-sm font-bold text-gray-400">
+                <span class="text-pink-500">Chatrooms</span>
+            </div>
+            <button onclick="openWalletModal()" class="bg-gray-800 px-3 py-1 rounded-full text-xs font-bold text-yellow-400">
+                <i class="fa-solid fa-coins"></i> <span id="coinBalance">1000</span>
+            </button>
+        </div>
+
+        <div id="spinFloatingBtn" onclick="openLuckySpin()" class="fixed right-3 top-1/2 -translate-y-1/2 z-40 bg-purple-600/90 border-2 border-yellow-400 p-2.5 rounded-full shadow-lg shadow-purple-600/50 cursor-pointer animate-bounce">
+            <span class="text-xl">🎰</span>
+            <span class="absolute -top-1 -right-1 bg-red-500 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full">FREE</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto relative pb-20 p-4">
+            <div id="viewProfile" class="space-y-4">
+                <div class="bg-gray-800/40 p-4 rounded-3xl border border-gray-800">
+                    <h3 id="profileNameDisplay" class="font-bold text-base">User</h3>
+                    <p class="text-xs text-pink-400">UID: #741829 | VIP 👑</p>
+                </div>
+
+                <div class="bg-gray-800/40 p-4 rounded-3xl border border-gray-800 space-y-3">
+                    <div class="flex justify-between items-center border-b border-gray-700/50 pb-2">
+                        <h4 class="font-bold text-xs text-pink-400">💞 Rishte & Badges</h4>
+                        <button onclick="openRelationModal()" class="text-[10px] bg-pink-600 px-2 py-1 rounded-lg text-white font-bold">+ Proposal</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-pink-950/40 border border-pink-500/30 p-2 rounded-xl">👩‍❤️‍👨 CP: Single</div>
+                        <div class="bg-purple-950/40 border border-purple-500/30 p-2 rounded-xl">🌟 Bestie: None</div>
+                        <div class="bg-blue-950/40 border border-blue-500/30 p-2 rounded-xl">🏰 Family: No Squad</div>
+                        <div class="bg-red-950/40 border border-red-500/30 p-2 rounded-xl">💖 Sweetheart: Off</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RELATIONSHIP MODAL -->
+    <div id="relationModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-700 w-full max-w-sm rounded-3xl p-5 space-y-4">
+            <h3 class="font-bold text-pink-500 text-sm">💞 Proposal Request</h3>
+            <select id="relationTypeSelect" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+                <option value="CP Couple 👩‍❤️‍👨">CP Couple (500 Coins)</option>
+                <option value="Sweetheart BF/GF 💖">Sweetheart (300 Coins)</option>
+                <option value="Bestie 🌟">Bestie (200 Coins)</option>
+                <option value="Family Member 🏰">Family Member (100 Coins)</option>
+            </select>
+            <input type="text" id="targetRelationUser" placeholder="User Name..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+            <button onclick="sendRelationReq()" class="w-full bg-pink-600 py-3 rounded-xl text-xs font-bold">Proposal Bhejein 🚀</button>
+        </div>
+    </div>
+
+    <!-- LUCKY SPIN MODAL -->
+    <div id="luckySpinModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gradient-to-b from-purple-900 to-indigo-950 border border-purple-500/50 w-full max-w-xs rounded-3xl p-5 text-center relative">
+            <button onclick="closeLuckySpin()" class="absolute top-3 right-3 text-gray-400">✕</button>
+            <h3 class="font-bold text-yellow-400 text-base">Lucky Spin 🎰</h3>
+            <p class="text-xs text-purple-200 mt-1" id="spinTimerText">Time Left: Ready!</p>
+            <div class="w-40 h-40 mx-auto my-4 rounded-full border-4 border-yellow-400 flex items-center justify-center bg-purple-800">
+                🌀 [ Lucky Wheel ]
+            </div>
+            <button id="spinBtn" onclick="startSpin()" class="w-full bg-yellow-500 py-3 rounded-2xl font-extrabold text-xs text-gray-950">Spin the Wheel 🚀</button>
+        </div>
+    </div>
+
+    <!-- PRIVATE CHAT MODAL -->
+    <div id="privateChatModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-700 w-full max-w-sm rounded-3xl p-4 flex flex-col h-[400px]">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <div>
+                    <h3 id="privateChatTargetName" class="font-bold text-pink-500 text-sm">User Name</h3>
+                    <p id="callStatusText" class="text-[10px] text-yellow-400">🔒 Call locked: Reply ka wait karein</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="tryPrivateCall()" class="bg-green-600 px-3 py-1 rounded-full text-xs text-white font-bold">📞 Call</button>
+                    <button onclick="closePrivateChat()" class="text-gray-400 p-1">✕</button>
+                </div>
+            </div>
+
+            <div id="privateMsgBox" class="flex-1 overflow-y-auto my-3 space-y-2 text-xs p-2 bg-gray-950 rounded-xl"></div>
+
+            <div class="flex gap-2">
+                <input type="text" id="privateMsgInput" placeholder="Message likhein..." class="flex-1 bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+                <button onclick="sendPrivateMsg()" class="bg-pink-600 px-4 rounded-xl font-bold text-xs">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let myName = "User";
+        let activePrivateTarget = "";
+
+        function loginUser() {
+            const val = document.getElementById('usernameInput').value.trim();
+            if(val) myName = val;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            socket.emit('join_room', { name: myName });
+        }
+
+        function openRelationModal() { document.getElementById('relationModal').classList.toggle('hidden'); }
+
+        function sendRelationReq() {
+            const type = document.getElementById('relationTypeSelect').value;
+            const target = document.getElementById('targetRelationUser').value.trim();
+            if (!target) return alert('Name dalein!');
+            socket.emit('send_relationship_request', { targetUser: target, relationType: type });
+            openRelationModal();
+        }
+
+        const SPIN_COOLDOWN_MS = 13 * 60 * 60 * 1000;
+
+        function openLuckySpin() {
+            document.getElementById('luckySpinModal').classList.remove('hidden');
+            checkSpinTimer();
+        }
+
+        function closeLuckySpin() { document.getElementById('luckySpinModal').classList.add('hidden'); }
+
+        function checkSpinTimer() {
+            const lastSpin = localStorage.getItem('lastSpinTime');
+            const now = Date.now();
+            const spinBtn = document.getElementById('spinBtn');
+            const timerText = document.getElementById('spinTimerText');
+
+            if (lastSpin && (now - lastSpin < SPIN_COOLDOWN_MS)) {
+                const remainingMs = SPIN_COOLDOWN_MS - (now - lastSpin);
+                const hoursLeft = Math.floor(remainingMs / (1000 * 60 * 60));
+                const minsLeft = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                
+                spinBtn.disabled = true;
+                spinBtn.classList.add('opacity-50');
+                timerText.innerText = `Time Left ⏱️ ${hoursLeft}h : ${minsLeft}m`;
+            } else {
+                spinBtn.disabled = false;
+                spinBtn.classList.remove('opacity-50');
+                timerText.innerText = "✨ Spin is Ready!";
+            }
+        }
+
+        function startSpin() {
+            localStorage.setItem('lastSpinTime', Date.now());
+            alert("🎉 Mubarak ho! Spin Reward mila hai!");
+            checkSpinTimer();
+        }
+
+        function openPrivateChat(targetName) {
+            activePrivateTarget = targetName;
+            document.getElementById('privateChatTargetName').innerText = targetName;
+            document.getElementById('privateChatModal').classList.remove('hidden');
+        }
+
+        function closePrivateChat() { document.getElementById('privateChatModal').classList.add('hidden'); }
+
+        function sendPrivateMsg() {
+            const text = document.getElementById('privateMsgInput').value.trim();
+            if(!text) return;
+            socket.emit('send_private_msg', { toUser: activePrivateTarget, text: text });
+            
+            const box = document.getElementById('privateMsgBox');
+            box.innerHTML += `<div class="text-right text-pink-400"><b>Me:</b> ${text}</div>`;
+            document.getElementById('privateMsgInput').value = '';
+        }
+
+        function tryPrivateCall() {
+            socket.emit('initiate_private_call', { targetUser: activePrivateTarget });
+        }
+
+        socket.on('wallet_update', (data) => {
+            document.getElementById('coinBalance').innerText = data.coins;
+        });
+
+        socket.on('private_msg_receive', (data) => {
+            if(data.to === myName || data.from === myName) {
+                if(data.canCall) {
+                    document.getElementById('callStatusText').innerText = "🟢 Call unlocked! Call kar sakte hain.";
+                }
+                if(data.to === myName) {
+                    openPrivateChat(data.from);
+                    const box = document.getElementById('privateMsgBox');
+                    box.innerHTML += `<div class="text-left text-blue-400"><b>${data.from}:</b> ${data.text}</div>`;
+                }
+            }
+        });
+
+        socket.on('error_msg', (msg) => { alert(msg); });
+    </script>
+</body>
+</html>
+  
