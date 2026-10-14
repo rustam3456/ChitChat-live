@@ -35,7 +35,21 @@
             <span class="absolute -top-1 -right-1 bg-red-500 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full">FREE</span>
         </div>
 
-        <div class="flex-1 overflow-y-auto relative pb-20 p-4">
+        <div class="flex-1 overflow-y-auto relative pb-20 p-4 space-y-4">
+            
+            <!-- ROOM VIEW & SEATS -->
+            <div id="roomView" class="space-y-3">
+                <div class="bg-gray-800/40 p-3 rounded-2xl border border-gray-800 text-center">
+                    <p id="roomAnnouncement" class="text-xs text-yellow-400 font-bold">📢 Niyamo ka palan karein!</p>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div onclick="toggleSeat(0)" class="bg-gray-800/60 p-2.5 rounded-xl border border-gray-700 text-xs cursor-pointer">🎙️ Seat 1<br><span id="seat0" class="text-[9px] text-gray-400">Empty</span></div>
+                    <div onclick="toggleSeat(1)" class="bg-gray-800/60 p-2.5 rounded-xl border border-gray-700 text-xs cursor-pointer">🎙️ Seat 2<br><span id="seat1" class="text-[9px] text-gray-400">Empty</span></div>
+                    <div onclick="toggleSeat(2)" class="bg-gray-800/60 p-2.5 rounded-xl border border-gray-700 text-xs cursor-pointer">🎙️ Seat 3<br><span id="seat2" class="text-[9px] text-gray-400">Empty</span></div>
+                </div>
+                <div id="chatBox" class="h-36 overflow-y-auto bg-gray-950/60 p-3 rounded-2xl text-xs space-y-1.5 border border-gray-800"></div>
+            </div>
+
             <div id="viewProfile" class="space-y-4">
                 <div class="bg-gray-800/40 p-4 rounded-3xl border border-gray-800">
                     <h3 id="profileNameDisplay" class="font-bold text-base">User</h3>
@@ -55,6 +69,12 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- BOTTOM CHAT INPUT -->
+        <div class="absolute bottom-0 left-0 right-0 p-3 bg-gray-900 border-t border-gray-800 flex gap-2">
+            <input type="text" id="roomMsgInput" placeholder="Public message..." class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white">
+            <button onclick="sendRoomMessage()" class="bg-pink-600 px-4 rounded-xl text-xs font-bold">Send</button>
         </div>
     </div>
 
@@ -86,40 +106,28 @@
         </div>
     </div>
 
-    <!-- PRIVATE CHAT MODAL -->
-    <div id="privateChatModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-gray-700 w-full max-w-sm rounded-3xl p-4 flex flex-col h-[400px]">
-            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
-                <div>
-                    <h3 id="privateChatTargetName" class="font-bold text-pink-500 text-sm">User Name</h3>
-                    <p id="callStatusText" class="text-[10px] text-yellow-400">🔒 Call locked: Reply ka wait karein</p>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="tryPrivateCall()" class="bg-green-600 px-3 py-1 rounded-full text-xs text-white font-bold">📞 Call</button>
-                    <button onclick="closePrivateChat()" class="text-gray-400 p-1">✕</button>
-                </div>
-            </div>
-
-            <div id="privateMsgBox" class="flex-1 overflow-y-auto my-3 space-y-2 text-xs p-2 bg-gray-950 rounded-xl"></div>
-
-            <div class="flex gap-2">
-                <input type="text" id="privateMsgInput" placeholder="Message likhein..." class="flex-1 bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
-                <button onclick="sendPrivateMsg()" class="bg-pink-600 px-4 rounded-xl font-bold text-xs">Send</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         const socket = io();
         let myName = "User";
-        let activePrivateTarget = "";
 
         function loginUser() {
             const val = document.getElementById('usernameInput').value.trim();
             if(val) myName = val;
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('profileNameDisplay').innerText = myName;
             socket.emit('join_room', { name: myName });
+        }
+
+        function toggleSeat(index) {
+            socket.emit('toggle_seat', { seatIndex: index });
+        }
+
+        function sendRoomMessage() {
+            const text = document.getElementById('roomMsgInput').value.trim();
+            if(!text) return;
+            socket.emit('chat_message', { sender: myName, text: text });
+            document.getElementById('roomMsgInput').value = '';
         }
 
         function openRelationModal() { document.getElementById('relationModal').classList.toggle('hidden'); }
@@ -168,47 +176,34 @@
             checkSpinTimer();
         }
 
-        function openPrivateChat(targetName) {
-            activePrivateTarget = targetName;
-            document.getElementById('privateChatTargetName').innerText = targetName;
-            document.getElementById('privateChatModal').classList.remove('hidden');
-        }
+        socket.on('init_room', (state) => {
+            document.getElementById('roomAnnouncement').innerText = state.announcement;
+        });
 
-        function closePrivateChat() { document.getElementById('privateChatModal').classList.add('hidden'); }
+        socket.on('update_seats', (seats) => {
+            for(let i=0; i<3; i++) {
+                const seatSpan = document.getElementById(`seat${i}`);
+                if(seats[i]) {
+                    seatSpan.innerText = seats[i].name;
+                    seatSpan.className = "text-[9px] text-green-400 font-bold";
+                } else {
+                    seatSpan.innerText = "Empty";
+                    seatSpan.className = "text-[9px] text-gray-400";
+                }
+            }
+        });
 
-        function sendPrivateMsg() {
-            const text = document.getElementById('privateMsgInput').value.trim();
-            if(!text) return;
-            socket.emit('send_private_msg', { toUser: activePrivateTarget, text: text });
-            
-            const box = document.getElementById('privateMsgBox');
-            box.innerHTML += `<div class="text-right text-pink-400"><b>Me:</b> ${text}</div>`;
-            document.getElementById('privateMsgInput').value = '';
-        }
-
-        function tryPrivateCall() {
-            socket.emit('initiate_private_call', { targetUser: activePrivateTarget });
-        }
+        socket.on('chat_message', (data) => {
+            const box = document.getElementById('chatBox');
+            box.innerHTML += `<div><b>${data.sender}:</b> ${data.text}</div>`;
+            box.scrollTop = box.scrollHeight;
+        });
 
         socket.on('wallet_update', (data) => {
             document.getElementById('coinBalance').innerText = data.coins;
-        });
-
-        socket.on('private_msg_receive', (data) => {
-            if(data.to === myName || data.from === myName) {
-                if(data.canCall) {
-                    document.getElementById('callStatusText').innerText = "🟢 Call unlocked! Call kar sakte hain.";
-                }
-                if(data.to === myName) {
-                    openPrivateChat(data.from);
-                    const box = document.getElementById('privateMsgBox');
-                    box.innerHTML += `<div class="text-left text-blue-400"><b>${data.from}:</b> ${data.text}</div>`;
-                }
-            }
         });
 
         socket.on('error_msg', (msg) => { alert(msg); });
     </script>
 </body>
 </html>
-  
