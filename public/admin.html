@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChitChat - Admin Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-gray-950 text-white font-sans p-4 max-w-md mx-auto">
+
+    <div class="flex items-center justify-between border-b border-gray-800 pb-4 mb-4">
+        <h1 class="text-lg font-extrabold text-pink-500">🛡️ Admin Control Panel</h1>
+        <span class="text-xs bg-red-600 px-2.5 py-1 rounded-full font-bold">MASTER</span>
+    </div>
+
+    <div class="space-y-4">
+        <!-- Coin Management -->
+        <div class="bg-gray-900 border border-gray-800 p-4 rounded-3xl space-y-3">
+            <h2 class="text-xs font-bold text-yellow-400">💰 Coin Management</h2>
+            <input type="text" id="targetUserCoins" placeholder="User ka naam..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+            <input type="number" id="coinAmountInput" placeholder="Coins (+/- amount)..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+            <button onclick="updateUserCoins()" class="w-full bg-yellow-500 text-gray-950 font-extrabold py-2.5 rounded-xl text-xs">Coins Update Karein 🚀</button>
+        </div>
+
+        <!-- Global Broadcast -->
+        <div class="bg-gray-900 border border-gray-800 p-4 rounded-3xl space-y-3">
+            <h2 class="text-xs font-bold text-pink-400">📢 Global Broadcast</h2>
+            <textarea id="broadcastMsgInput" placeholder="Sabhi users ke liye message..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white h-20"></textarea>
+            <button onclick="sendBroadcast()" class="w-full bg-pink-600 font-bold py-2.5 rounded-xl text-xs">Broadcast Bhejein 🚀</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        function updateUserCoins() {
+            const targetUser = document.getElementById('targetUserCoins').value.trim();
+            const amount = parseInt(document.getElementById('coinAmountInput').value);
+            if(!targetUser || isNaN(amount)) return alert('Sahi details bharein!');
+            
+            socket.emit('admin_action_coins', { targetUser, amount });
+            alert('Coins update request bhej di gayi hai!');
+        }
+
+        function sendBroadcast() {
+            const message = document.getElementById('broadcastMsgInput').value.trim();
+            if(!message) return;
+            
+            socket.emit('admin_broadcast', { message });
+            alert('Broadcast bhej diya gaya hai!');
+            document.getElementById('broadcastMsgInput').value = '';
+        }
+    </script>
+</body>
+</html>
