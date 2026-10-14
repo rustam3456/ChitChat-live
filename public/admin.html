@@ -3,54 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChitChat - Admin Control Panel</title>
+    <title>ChitChat - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
-<body class="bg-gray-950 text-white font-sans p-4 max-w-md mx-auto">
+<body class="bg-gray-950 text-white font-sans antialiased p-6">
 
-    <div class="flex items-center justify-between border-b border-gray-800 pb-4 mb-4">
-        <h1 class="text-lg font-extrabold text-pink-500">🛡️ Admin Control Panel</h1>
-        <span class="text-xs bg-red-600 px-2.5 py-1 rounded-full font-bold">MASTER</span>
-    </div>
-
-    <div class="space-y-4">
-        <!-- Coin Management -->
-        <div class="bg-gray-900 border border-gray-800 p-4 rounded-3xl space-y-3">
-            <h2 class="text-xs font-bold text-yellow-400">💰 Coin Management</h2>
-            <input type="text" id="targetUserCoins" placeholder="User ka naam..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
-            <input type="number" id="coinAmountInput" placeholder="Coins (+/- amount)..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
-            <button onclick="updateUserCoins()" class="w-full bg-yellow-500 text-gray-950 font-extrabold py-2.5 rounded-xl text-xs">Coins Update Karein 🚀</button>
+    <div class="max-w-xl mx-auto space-y-6">
+        <!-- Admin Header -->
+        <div class="bg-gray-900 border border-gray-800 p-5 rounded-3xl flex justify-between items-center">
+            <h1 class="text-lg font-extrabold text-pink-500">🛡️ ChitChat Control Center (Admin)</h1>
+            <span class="bg-red-500/20 text-red-400 text-xs px-3 py-1 rounded-full font-bold">Live Control</span>
         </div>
 
-        <!-- Global Broadcast -->
-        <div class="bg-gray-900 border border-gray-800 p-4 rounded-3xl space-y-3">
-            <h2 class="text-xs font-bold text-pink-400">📢 Global Broadcast</h2>
-            <textarea id="broadcastMsgInput" placeholder="Sabhi users ke liye message..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white h-20"></textarea>
-            <button onclick="sendBroadcast()" class="w-full bg-pink-600 font-bold py-2.5 rounded-xl text-xs">Broadcast Bhejein 🚀</button>
+        <!-- User Coin Management Card -->
+        <div class="bg-gray-900 border border-gray-800 p-5 rounded-3xl space-y-4">
+            <h2 class="text-sm font-bold text-yellow-400"><i class="fa-solid fa-coins"></i> User Coin & Wallet Manager</h2>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Target User Name:</label>
+                    <input type="text" id="adminTargetUser" placeholder="User ka naam daalein..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Coins Add / Deduct Karein:</label>
+                    <input type="number" id="adminCoinAmount" placeholder="Coins quantity (e.g. 5000)..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+                </div>
+                <button onclick="adminModifyCoins()" class="w-full bg-gradient-to-r from-yellow-600 to-amber-600 py-3 rounded-xl text-xs font-bold shadow-lg shadow-yellow-600/30">
+                    Update Wallet Coins ⚡
+                </button>
+            </div>
+        </div>
+
+        <!-- Room Broadcast Card -->
+        <div class="bg-gray-900 border border-gray-800 p-5 rounded-3xl space-y-4">
+            <h2 class="text-sm font-bold text-pink-400"><i class="fa-solid fa-bullhorn"></i> Global Room Announcement</h2>
+            <textarea id="adminNoticeText" placeholder="Sabhi rooms me bhejne ke liye notice likhein..." class="w-full bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-xs text-white h-20"></textarea>
+            <button onclick="adminSendNotice()" class="w-full bg-pink-600 py-3 rounded-xl text-xs font-bold shadow-lg shadow-pink-600/30">
+                Broadcast Announcement 🚀
+            </button>
         </div>
     </div>
 
     <script>
         const socket = io();
 
-        function updateUserCoins() {
-            const targetUser = document.getElementById('targetUserCoins').value.trim();
-            const amount = parseInt(document.getElementById('coinAmountInput').value);
-            if(!targetUser || isNaN(amount)) return alert('Sahi details bharein!');
+        function adminModifyCoins() {
+            const user = document.getElementById('adminTargetUser').value.trim();
+            const coins = document.getElementById('adminCoinAmount').value;
+            if(!user || !coins) return alert('Kripya sabhi fields bharein!');
             
-            socket.emit('admin_action_coins', { targetUser, amount });
-            alert('Coins update request bhej di gayi hai!');
+            socket.emit('admin_action_coins', { targetUser: user, amount: parseInt(coins) });
+            alert(`${user} ke account me coins update ki request bhej di gayi hai!`);
         }
 
-        function sendBroadcast() {
-            const message = document.getElementById('broadcastMsgInput').value.trim();
-            if(!message) return;
+        function adminSendNotice() {
+            const text = document.getElementById('adminNoticeText').value.trim();
+            if(!text) return alert('Notice text khali hai!');
             
-            socket.emit('admin_broadcast', { message });
-            alert('Broadcast bhej diya gaya hai!');
-            document.getElementById('broadcastMsgInput').value = '';
+            socket.emit('admin_broadcast', { message: text });
+            alert('Global announcement broadcast kar di gayi hai!');
         }
     </script>
 </body>
