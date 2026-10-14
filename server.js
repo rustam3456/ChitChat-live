@@ -1,31 +1,53 @@
 // ====================================================================
-// 🌟 RECHARGE SLABS & COIN CALCULATION LOGIC
+// 🌟 RECHARGE SLABS & COIN CALCULATION LOGIC (Final - ₹700 Removed)
 // ====================================================================
+
 function calculateCoinsWithMegaOffer(amount) {
-    const baseRate = 30 / 9; 
+    const baseRate = 30 / 9; // Base rate: ₹9 = 30 Coins
     let rawCoins = Math.round(amount * baseRate);
     let bonusCoins = 0;
 
-    if (amount >= 5000) bonusCoins = 6000;
-    else if (amount >= 2000) bonusCoins = 2000;
-    else if (amount >= 1500) bonusCoins = 1400;
-    else if (amount >= 1000) bonusCoins = 900;
-    else if (amount >= 750) bonusCoins = 650;
-    else if (amount >= 500) bonusCoins = 350;
-    else if (amount >= 300) bonusCoins = 180;
-    else if (amount >= 200) bonusCoins = 110;
-    else if (amount >= 149) bonusCoins = 75;
-    else if (amount >= 100) bonusCoins = 45;
-    else if (amount >= 50) bonusCoins = 20;
+    // Updated Slabs Logic
+    if (amount >= 5000) {
+        bonusCoins = 6000;
+    } else if (amount >= 2000) {
+        bonusCoins = 2000;
+    } else if (amount >= 1500) {
+        bonusCoins = 1400;
+    } else if (amount >= 1000) {
+        bonusCoins = 900;
+    } else if (amount >= 750) {
+        bonusCoins = 650;
+    } else if (amount >= 500) {
+        bonusCoins = 350;
+    } else if (amount >= 300) {
+        bonusCoins = 180;
+    } else if (amount >= 200) {
+        bonusCoins = 110;
+    } else if (amount >= 149) {
+        bonusCoins = 75;
+    } else if (amount >= 100) {
+        bonusCoins = 45;
+    } else if (amount >= 50) {
+        bonusCoins = 20;
+    } else if (amount >= 9) {
+        bonusCoins = 0;
+    }
 
     let total = rawCoins + bonusCoins;
-    if (amount >= 5000) total += Math.round(total * 0.10);
+
+    if (amount >= 5000) {
+        let extra10Percent = Math.round(total * 0.10);
+        total += extra10Percent;
+    }
+
     return { totalCoins: total };
 }
 
 // ====================================================================
 // SERVER CORE & DATABASE
 // ====================================================================
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -38,10 +60,10 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.static('public'));
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/chitchat';
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch(err => console.log('❌ DB Error:', err));
+mongoose.connect('mongodb://localhost:27017/chitchat', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => console.log('✅ MongoDB Connected')).catch(err => console.log('❌ DB Error:', err));
 
 const userSchema = new mongoose.Schema({
     name: { type: String, unique: true, required: true },
@@ -64,6 +86,7 @@ let roomState = {
 };
 
 let privateChats = {};
+
 function getChatKey(user1, user2) {
     return [user1, user2].sort().join('_');
 }
@@ -80,7 +103,9 @@ io.on('connection', (socket) => {
                 await dbUser.save();
             }
             socket.emit('wallet_update', { coins: dbUser.coins, role: dbUser.role });
-        } catch (err) { console.error(err); }
+        } catch (err) {
+            console.error(err);
+        }
     });
 
     socket.on('toggle_seat', ({ seatIndex }) => {
@@ -94,6 +119,7 @@ io.on('connection', (socket) => {
         io.emit('update_seats', roomState.seats);
     });
 
+    // Admin Panel Actions
     socket.on('admin_action_coins', async ({ targetUser, amount }) => {
         try {
             let dbUser = await User.findOne({ name: targetUser });
@@ -109,6 +135,7 @@ io.on('connection', (socket) => {
         io.emit('chat_message', { sender: 'Admin Announcement 📢', text: message });
     });
 
+    // Relationship Request & Coin Deduction
     socket.on('send_relationship_request', async ({ targetUser, relationType }) => {
         const sender = socket.data.user?.name || 'User';
         let cost = 0;
@@ -139,6 +166,7 @@ io.on('connection', (socket) => {
         } catch (err) { console.error(err); }
     });
 
+    // Private Chat & Strict Call Lock Logic
     socket.on('send_private_msg', ({ toUser, text }) => {
         const sender = socket.data.user?.name || 'Guest';
         const chatKey = getChatKey(sender, toUser);
@@ -179,4 +207,4 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-                                                                      
+                                            
